@@ -1,0 +1,19 @@
+api:
+  base_url: "https://financialmodelingprep.com/api/v3"
+
+valuation:
+  default_pe_ratio: 15
+  quality_threshold:
+    revenue_growth: 0.05
+    dividend_growth: 0.05
+
+dashboard:
+  refresh_interval: 300  # in seconds
+
+database:
+  type: "duckdb"
+  file: "stock_data.duckdb"
+
+logging:
+  level: "INFO"
+  file: "app.log"
