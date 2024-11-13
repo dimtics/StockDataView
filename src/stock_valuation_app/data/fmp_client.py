@@ -3,7 +3,6 @@ from urllib.parse import urljoin
 import httpx
 from typing import Any, Optional
 from pydantic import BaseModel
-from stock_valuation_app.utils import utils
 
 
 @dataclass
@@ -26,8 +25,3 @@ class FMPClient:
             response.raise_for_status()
             data = response.json()
             return data
-
-api_client = FMPClient()
-rating_endpoint = utils.get_endpoint("rating")
-data = api_client.fetch_data(rating_endpoint, "AAPL")
-print(data)
