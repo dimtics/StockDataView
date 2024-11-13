@@ -1,25 +1,33 @@
+from dataclasses import dataclass, field
+from urllib.parse import urljoin
 import httpx
+from typing import Any, Optional
 from pydantic import BaseModel
+from stock_valuation_app.utils import utils
 
 
-class FinancialData(BaseModel):
-    revenue: float
-    netIncome: float
-    freeCashFlow: float
-    dividendsPaid: float
-
-
+@dataclass
 class FMPClient:
-    def __init__(self, api_key: str):
-        self.base_url = "https://financialmodelingprep.com/api/v3"
-        self.api_key = api_key
+    """A client for interacting with the Financial Modeling Prep API."""
+    base_url: str = field(default_factory=utils.get_base_url)
+    api_key: str = field(default_factory=utils.get_api_key)
 
-    async def get_financial_data(
-        self, symbol: str, limit: int = 10
-    ) -> list[FinancialData]:
-        url = f"{self.base_url}/income-statement/{symbol}?limit={limit}&apikey={self.api_key}"
+
+    async def fetch_data(self, endpoint: str, symbol: str, period: Optional[str] = "annual"):  # params: dict[str, Any]
+        """Fetch data from the Financial Modeling Prep API."""
+        base_endpoint = urljoin(self.base_url, endpoint)
+        if period is None:
+            url = f"{base_endpoint}/{symbol}?apikey={self.api_key}"
+        else:
+            url = f"{base_endpoint}/{symbol}?period={period}&apikey={self.api_key}"
+
         async with httpx.AsyncClient() as client:
             response = await client.get(url)
             response.raise_for_status()
             data = response.json()
-            return [FinancialData(**item) for item in data]
+            return data
+
+api_client = FMPClient()
+rating_endpoint = utils.get_endpoint("rating")
+data = api_client.fetch_data(rating_endpoint, "AAPL")
+print(data)

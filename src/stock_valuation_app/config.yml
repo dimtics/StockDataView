@@ -1,5 +1,8 @@
 api:
   base_url: "https://financialmodelingprep.com/api/v3"
+  annual_ratios: "ratios/"
+  annual_financial_growth: "financial-growth/"
+  rating: "rating/"
 
 valuation:
   default_pe_ratio: 15
@@ -15,5 +18,8 @@ database:
   file: "stock_data.duckdb"
 
 logging:
-  level: "INFO"
-  file: "app.log"
+  level: INFO
+  file: app.log
+  filemode: "w"
+  format: "%(asctime)s - %(levelname)s - %(message)s"
+  datefmt: "%Y-%m-%d %H:%M:%S"
