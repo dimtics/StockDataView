@@ -11,7 +11,7 @@ class CompanyProfile(BaseModel):
 
 
 class Rating(BaseModel):
-    #symbol: str
+    symbol: str
     date: str
     rating: str
     score: int = Field(..., alias="ratingScore")
@@ -31,7 +31,7 @@ class Rating(BaseModel):
 
 
 class Ratios(BaseModel):
-    #symbol: str
+    symbol: str
     year: str = Field(..., alias="calendarYear")
     de_ratio: float = Field(..., alias="debtEquityRatio")
     fcf_ps: float = Field(..., alias="freeCashFlowPerShare")
@@ -45,7 +45,7 @@ class Ratios(BaseModel):
 
 
 class KeyMetrics(BaseModel):
-    #symbol: str
+    symbol: str
     year: str = Field(..., alias="calendarYear")
     rev_per_share: float = Field(..., alias="revenuePerShare")
     net_income_per_share: float = Field(..., alias="netIncomePerShare")
@@ -59,7 +59,7 @@ class KeyMetrics(BaseModel):
 
 
 class Growth(BaseModel):
-    #symbol: str
+    symbol: str
     year: str = Field(..., alias="calendarYear")
     rev_growth: float = Field(..., alias="revenueGrowth")
     net_inc_growth: float = Field(..., alias="netIncomeGrowth")
