@@ -1,8 +1,8 @@
 api:
   base_url: "https://financialmodelingprep.com/api/v3"
-  annual_ratios: "ratios/"
-  annual_financial_growth: "financial-growth/"
-  rating: "rating/"
+  annual_ratios: "ratios"
+  annual_financial_growth: "financial-growth"
+  rating: "rating"
 
 valuation:
   default_pe_ratio: 15
