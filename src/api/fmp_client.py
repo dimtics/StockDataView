@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from typing import Any
 import httpx
 import utils
-from stock_valuation_app.models.stock import CombinedModel
+from models.stock_data import CombinedModel
 
 
 def get_endpoint(url: str) -> str:
@@ -37,6 +37,7 @@ class FMPClient:
         return data
 
     async def fetch_data(self, ticker: str) -> dict[str, list[dict[str, Any]]]:
+        """Extracts data asynchronously from multiple FMP endpoints"""
         urls = []
         for metric in self.metric_types:
             if metric in ["profile", "rating"]:
