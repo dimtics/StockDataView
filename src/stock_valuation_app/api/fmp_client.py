@@ -3,8 +3,8 @@ import asyncio
 from dataclasses import dataclass, field
 from typing import Any
 import httpx
-import utils
-from models.stock_data import CombinedModel
+import stock_valuation_app.utils as utils
+from stock_valuation_app.models.stock_models import CombinedModel
 
 
 def get_endpoint(url: str) -> str:
@@ -28,7 +28,16 @@ class FMPClient:
     """A client for interacting with the Financial Modeling Prep API."""
     base_url: str = field(default_factory=get_base_url)
     api_key: str = field(default_factory=get_api_key)
-    metric_types: list[str] = field(default_factory=lambda: ["profile", "rating", "ratios", "key-metrics", "financial-growth",])
+    metric_types: list[str] = field(
+        default_factory=lambda: [
+            "profile",
+            "rating",
+            "quote",
+            "key-metrics-ttm",
+            "key-metrics",
+            "financial-growth",
+        ]
+    )  #
 
     async def get_data(self, client: httpx.Client, url: str) -> dict[str, Any]:
         """Call API endpoint asynchronously"""
@@ -40,7 +49,7 @@ class FMPClient:
         """Extracts data asynchronously from multiple FMP endpoints"""
         urls = []
         for metric in self.metric_types:
-            if metric in ["profile", "rating"]:
+            if metric in ["profile", "quote", "rating", "key-metrics-ttm"]:
                 endpoint = f"{self.base_url}/{metric}/{ticker}?apikey={self.api_key}"
             else:
                 endpoint = f"{self.base_url}/{metric}/{ticker}?period=annual&apikey={self.api_key}"
@@ -54,7 +63,11 @@ class FMPClient:
             results = await asyncio.gather(*tasks)
 
             # Rename some metric types to match with fields defined in the CombinedModel
-            replace_metric_types = {"key-metrics": "key_metrics", "financial-growth": "growth",}
+            replace_metric_types = {
+                "rating": "ratings",
+                "key-metrics": "key_metrics",
+                "key-metrics-ttm": "key_metrics_ttm",
+                "financial-growth": "growth",}  #
             new_metric_types = [replace_metric_types.get(item, item) for item in self.metric_types]
 
             # Create combined records dict for validation
