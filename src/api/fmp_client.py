@@ -1,33 +1,20 @@
-import os
 import asyncio
 from dataclasses import dataclass, field
 from typing import Any
+
 import httpx
-import stock_valuation_app.utils as utils
-from stock_valuation_app.models.stock_models import CombinedModel
 
-
-def get_endpoint(url: str) -> str:
-    """Get endpoints from the configuration."""
-    api_config = utils.get_section_config("api")
-    return api_config.get(f"{url}")
-
-
-def get_base_url() -> str:
-    """Get the base URL from the configuration."""
-    return get_endpoint("base_url")
-
-
-def get_api_key() -> str:
-    """Get the API key from the .env file."""
-    return os.getenv("FMP_API_KEY", "")
+import utils as utils
+from config import settings
+from models.stock_models import CombinedModel
 
 
 @dataclass
 class FMPClient:
     """A client for interacting with the Financial Modeling Prep API."""
-    base_url: str = field(default_factory=get_base_url)
-    api_key: str = field(default_factory=get_api_key)
+
+    base_url: str = field(default_factory=settings.base_url)
+    api_key: str = field(default_factory=settings.fmp_api_key)
     metric_types: list[str] = field(
         default_factory=lambda: [
             "profile",
@@ -67,8 +54,11 @@ class FMPClient:
                 "rating": "ratings",
                 "key-metrics": "key_metrics",
                 "key-metrics-ttm": "key_metrics_ttm",
-                "financial-growth": "growth",}  #
-            new_metric_types = [replace_metric_types.get(item, item) for item in self.metric_types]
+                "financial-growth": "growth",
+            }  #
+            new_metric_types = [
+                replace_metric_types.get(item, item) for item in self.metric_types
+            ]
 
             # Create combined records dict for validation
             records = dict(zip(new_metric_types, results))

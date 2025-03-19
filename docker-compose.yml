@@ -1,8 +1,0 @@
-version: '3'
-services:
-  web:
-    build: .
-    ports:
-      - "8000:8000"
-    environment:
-      - FMP_API_KEY=your_api_key_here

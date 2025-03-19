@@ -1,13 +1,10 @@
 from typing import Any
 import asyncio
-import pandas as pd
-import duckdb as db
 import polars as pl
 import streamlit as st
 import streamlit.components.v1 as components
 import plotly.graph_objects as go
-import plotly.express as px
-from stock_valuation_app.services.stock_analysis import extract_source_data
+from utils import extract_source_data
 
 
 def display_profile(profile_data: dict[str, Any]):
@@ -61,11 +58,12 @@ def display_quotes(quote_data: dict[str, Any], profile_data: dict[str, Any]):
         change_price = f"{quote_data['change_percent']:,.2f}%"
         year_low = f"${quote_data['year_low']:,.2f}"
         year_high = f"${quote_data['year_high']:,.2f}"
-        market_cap = f"{quote_data["market_cap"]/1_000_000_000:.2f}B"
-        vol_avg = f"{quote_data["vol_avg"]/1_000_000:.2f}M"
+        market_cap = f"{quote_data['market_cap']/1_000_000_000:.2f}B"
+        vol_avg = f"{quote_data['vol_avg']/1_000_000:.2f}M"
         earning_date = quote_data["earning_date"][:10]
+        eps = f"{quote_data['eps']:.2f}"
         shares_outstanding = f"{quote_data["shares_outstanding"]/1_000_000_000:.2f}B"
-        beta = profile_data["beta"]
+        #beta = profile_data["beta"]
 
         col1, col2, col3, col4, col5, col6, col7, col8, col9 = st.columns(9)
 
@@ -82,9 +80,9 @@ def display_quotes(quote_data: dict[str, Any], profile_data: dict[str, Any]):
         with col6:
             display_stock_metric("Market Cap", market_cap)
         with col7:
-            display_stock_metric("Shares", shares_outstanding)
+            display_stock_metric("EPS", eps)
         with col8:
-            display_stock_metric("Beta", beta)
+            display_stock_metric("Shares", shares_outstanding)
         with col9:
             display_stock_metric("Earning Date", earning_date)
     except Exception as e:
@@ -142,7 +140,7 @@ def display_metric_tables(data: list[dict[str, Any]]):
                 {generate_table_rows(data)}
             </div>
             """
-        return components.html(table_html, height=210) #210
+        return components.html(table_html, height=185) #210
 
 
 
@@ -153,7 +151,6 @@ def display_metric_tables(data: list[dict[str, Any]]):
 
     valuation_data = {
         "PE Ratio (TTM)": f"{quote_data['pe']:,.2f}",
-        "EPS (TTM)": f"{quote_data['eps']:,.2f}",
         "EV/EBITDA (TTM)": f"{key_metrics_ttm_data['ev_over_ebitda_ttm']:,.2f}",
         "Price/Sales (TTM)": f"{key_metrics_ttm_data['pts_ratio_ttm']:,.2f}",
         "Price/Book (TTM)": f"{key_metrics_ttm_data['ptb_ratio_ttm']:,.2f}",
@@ -165,11 +162,12 @@ def display_metric_tables(data: list[dict[str, Any]]):
         "EV/FCF (TTM)": f"{key_metrics_ttm_data['ev_to_fcf_ttm']:,.2f}",
         "FCF/Share (TTM)": f"{key_metrics_ttm_data['fcf_per_share_ttm']:,.2f}",
     }
+
     growth_metric_data = {
-        "5Y Rev Growth/Share": f"{latest_growth_data['fiveY_rev_growth_per_share']:,.2f}",
-        "5Y NI Growth/Share": f"{latest_growth_data['fiveY_ni_growth_per_share']:,.2f}",
-        "5Y Div Growth/Share": f"{latest_growth_data['fiveY_dps_growth_per_share']:,.2f}",
-        "5Y OCF Growth/Share": f"{latest_growth_data['fiveY_opcf_growth_per_share']:,.2f}",
+        "5Y Rev Growth/Share": f"{latest_growth_data['fiveY_rev_growth_per_share'] * 100:,.2f}%",
+        "5Y NI Growth/Share": f"{latest_growth_data['fiveY_ni_growth_per_share'] * 100:,.2f}%",
+        "5Y Div Growth/Share": f"{latest_growth_data['fiveY_dps_growth_per_share'] * 100:,.2f}%",
+        "5Y OCF Growth/Share": f"{latest_growth_data['fiveY_opcf_growth_per_share'] * 100:,.2f}%",
     }
 
     dividend_data = {
@@ -190,65 +188,24 @@ def display_metric_tables(data: list[dict[str, Any]]):
     container = st.empty()
     col1, col2, col3, col4, col5 = st.columns(5)
     with col1:
-        container.markdown(
-            display_table(valuation_data, "Valuation"), unsafe_allow_html=True
-        )
+        container.markdown(display_table(valuation_data, "Valuation"), unsafe_allow_html=True)
+        container.empty()
+
     with col2:
-        container.markdown(
-            display_table(freecashflow_data, "Cash Flow"), unsafe_allow_html=True
-        )
+        container.markdown(display_table(freecashflow_data, "Cash Flow"), unsafe_allow_html=True)
+        container.empty()
+
     with col3:
-        container.markdown(
-            display_table(growth_metric_data, "Growth"), unsafe_allow_html=True
-        )
+        container.markdown(display_table(growth_metric_data, "Growth"), unsafe_allow_html=True)
+        container.empty()
+
     with col4:
-        container.markdown(
-            display_table(dividend_data, "Dividend"), unsafe_allow_html=True
-        )
+        container.markdown(display_table(dividend_data, "Dividend"), unsafe_allow_html=True)
+        container.empty()
+
     with col5:
-        container.markdown(
-            display_table(rating_data, "Rating"), unsafe_allow_html=True
-        )
-
-
-# def display_ratings(ratings_data: list[dict[str, Any]]):
-#     """Displays rating dataset"""
-
-#     dfx = pl.DataFrame(ratings_data).cast(pl.String())
-
-#     if dfx is None:
-#         print("Dataframe is empty")
-#         return None
-
-#     ndf = db.sql("""SELECT symbol AS Symbol, date AS Date, rating AS Rating, score AS Score,
-#                 recommendation AS Recommendation, CONCAT(dcf_score, ' ', '(', dcf_rec, ')') AS 'Discounted Cash Flow',
-#                 CONCAT(roe_score, ' ', '(', roe_rec, ')') AS 'Return on Equity',
-#                 CONCAT(roa_score, ' ', '(', roa_rec, ')') AS 'Return on Assets',
-#                 CONCAT(de_score, ' ', '(', de_rec, ')') AS 'Debt-to-Equity',
-#                 CONCAT(pe_score, ' ', '(', pe_rec, ')') AS 'Price-to-Earnings',
-#                 CONCAT(pb_score, ' ', '(', pb_rec, ')') AS 'Price-to-Book'
-#                 FROM dfx
-#                 """).df()
-
-#     # Define custom CSS for larger text and center alignment
-#     custom_css = """
-#         <style>
-#             .dataframe {
-#                 font-size: 20px !important;
-#             }
-#             .dataframe th, .dataframe td {
-#                 text-align: center !important;
-#                 min-width: 200px !important;
-#             }
-#         </style>
-#     """
-
-#     # Apply styling to the DataFrame
-#     styled_df = ndf.set_index("Symbol").style.set_properties(**{'text-align': 'center'})
-
-#     # Display the custom CSS and the styled DataFrame
-#     st.markdown(custom_css, unsafe_allow_html=True)
-#     return st.dataframe(styled_df, use_container_width=True)
+        container.markdown(display_table(rating_data, "Rating"), unsafe_allow_html=True)
+        container.empty()
 
 
 
@@ -436,13 +393,14 @@ def display_growth_charts(growth_data: list[dict[str, Any]]):
     df = (
         pl.DataFrame(growth_data)
         .with_columns(
-            pl.col("date")
-            .str.strptime(pl.Date, format="%Y-%m-%d")
-            .alias("Year")
+            pl.exclude(["symbol", "date"]).map_elements(
+                lambda x: round(x * 100, 2), return_dtype=pl.Float64
+            ),
+            pl.col("date").str.strptime(pl.Date, format="%Y-%m-%d").alias("Year"),
         )
         .sort("date")
         .drop("date")
-    )
+    )# pl.col("col_name").list.eval(pl.element().sqrt()).
 
     if df is None:
         print("Dataframe is empty")
@@ -495,16 +453,18 @@ def main():
     layout="wide",
     )
 
-    st.title("Stock Valuation Dashboard")
-    #st.divider()
-    st.subheader(
-        "Get stock quality and valuation insights from historical financial data.",
-        divider="gray",
-    )
+    # Custom CSS
+    st.markdown("""
+    <style>
+    .custom-divider {
+        margin-top: 5px;  /* Adjust this value to control space above */
+        margin-bottom: 5px;  /* Adjust this value to control space below */
+        border: none;
+        border-top: 1px solid rgba(0, 0, 0, 0.1);
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
-    st.markdown('<div style="height: 15px;"></div>', unsafe_allow_html=True)
-
-    # Sidebar
     st.sidebar.markdown(
             """
             <style>
@@ -516,6 +476,18 @@ def main():
             """,
             unsafe_allow_html=True,
         )
+
+
+    st.title("Stock Valuation Dashboard")
+    #st.divider()
+    st.subheader(
+        "Get stock quality and valuation insights from historical financial data.",
+        divider="gray",
+    )
+
+    st.markdown('<div style="height: 10px;"></div>', unsafe_allow_html=True)
+
+    # Sidebar
     ticker = st.sidebar.text_input(r"$\textsf{\Large Enter stock symbol:}$")
     analyze_button = st.sidebar.button("Analyze")
 
@@ -539,337 +511,25 @@ def main():
             # Display ticker quotes
             #st.markdown("#### Key Metrics")
             display_quotes(quote_data, profile_data)
-            # st.markdown('<div style="height: 15px;"></div>', unsafe_allow_html=True)
-            st.divider()
+            st.markdown('<div style="height: 10px;"></div>', unsafe_allow_html=True)
+            st.markdown('<hr class="custom-divider">', unsafe_allow_html=True)
 
             display_metric_tables(table_data)
 
-            st.divider()
-
-            # st.markdown("#### Ratings")
-            # display_ratings(ratings_data)
+            st.markdown('<hr class="custom-divider">', unsafe_allow_html=True)
+            st.markdown('<div style="height: 10px;"></div>', unsafe_allow_html=True)
 
             left, right = st.columns(2)
-
             with left:
-                st.markdown("#### Valuation Metrics")
+                st.markdown("""<h4 style="text-align: center;">Valuation Metrics</h4>""", unsafe_allow_html=True)
                 display_metrics_charts(key_metrics_data, key_metrics_ttm_data)
             with right:
-                st.markdown("#### Growth Metrics")
+                st.markdown("""<h4 style="text-align: center;">Growth Metrics</h4>""", unsafe_allow_html=True)
                 display_growth_charts(growth_data)
+
+            st.divider()
 
 
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
-
-
-
-# analysis = analyze_stock(data)
-# st.subheader("Growth Rates")
-# for metric, value in analysis.items():
-#     st.metric(metric, f"{value:.2%}")
-
-# quality_stock = is_quality_dividend_growth_stock(analysis)
-# st.subheader("Quality Dividend Growth Stock")
-# st.write("Yes" if quality_stock else "No")
-
-# current_price = st.number_input("Enter current stock price:")
-# if current_price:
-#     undervalued = is_undervalued(current_price, analysis)
-#     st.subheader("Stock Valuation")
-#     st.write("Undervalued" if undervalued else "Overvalued")
-
-
-# /Users/skyfox/dim-dev/dimPythonProject/dim_projects/stock-valuation-app/src/stock_valuation_app/ui/app.py
-
-
-
-
-
-# Based on the search results, here are the top 6 metrics you can plot on a chart to determine a company valuation, without comparing to other companies:
-
-# 1. Revenue Growth Rate: This metric shows the percentage increase in revenue over time, indicating the company's growth trajectory[1].
-
-# 2. Earnings per Share (EPS): EPS represents the company's profit allocated to each outstanding share of common stock[4].
-
-# 3. Price-to-Earnings (P/E) Ratio: While this typically involves comparison, you can plot the P/E ratio over time to see how the market values the company's earnings[1][4].
-
-# 4. Enterprise Value-to-EBIT (EV/EBIT) Ratio: This metric compares the company's enterprise value to its earnings before interest and taxes, providing insight into the company's value relative to its operating earnings[1].
-
-# 5. Enterprise Value-to-Free Cash Flow (EV/FCF) Ratio: This measures the company's enterprise value relative to its free cash flow, indicating the company's ability to generate excess cash[1].
-
-# 6. Net Revenue Retention (NRR): This metric is particularly important for SaaS companies, showing the percentage of recurring revenue retained from existing customers over time[5].
-
-# These metrics, when plotted over time, can provide valuable insights into a company's financial health, growth potential, and overall valuation. Remember that while these metrics are useful individually, a comprehensive valuation should consider multiple factors and industry-specific nuances.
-
-# Citations:
-# [1] https://quartr.com/insights/investing/valuation-metrics-estimating-the-true-worth-of-a-company
-# [2] https://www.adamsbrowncpa.com/blog/how-investors-evaluate-key-metrics-in-a-business-valuation/
-# [3] https://eqvista.com/business-valuation-metrics/
-# [4] https://www.business-case-analysis.com/valuation.html
-# [5] https://www.saasacademy.com/blog/saas-company-valuation-metrics
-# [6] https://365financialanalyst.com/knowledge-hub/financial-analysis/valuation-ratios/
-# [7] https://www.reddit.com/r/SecurityAnalysis/comments/kwrg26/what_metrics_do_you_use_to_analyse_highgrowth/
-# [8] https://corporatefinanceinstitute.com/resources/valuation/types-of-valuation-multiples/
-
-
-
-
-# import streamlit as st
-# import streamlit.components.v1 as components
-
-
-# def create_pe_comparison(label, stock_pe, industry_pe):
-#     with open("combined_styles.html", "r") as file:
-#         html_content = file.read()
-
-#     formatted_html = (
-#         html_content.replace("{label}", label)
-#         .replace("{stock_pe}", str(stock_pe))
-#         .replace("{industry_pe}", str(industry_pe))
-#     )
-#     components.html(formatted_html, height=150)
-
-
-# def display_stock_price(label, stock_price):
-#     with open("combined_styles.html", "r") as file:
-#         html_content = file.read()
-
-#     formatted_html = html_content.replace("{label}", label).replace(
-#         "{stock_price}", str(stock_price)
-#     )
-#     components.html(formatted_html, height=120)
-
-
-# # Streamlit app
-# def main():
-#     st.title("Stock Information Display")
-#     create_pe_comparison("PE Comparison", 15.6, 18.2)
-#     display_stock_price("AAPL", 150.25)
-
-
-# if __name__ == "__main__":
-#     main()
-
-
-# import streamlit as st
-# import plotly.graph_objects as go
-# import pandas as pd
-# from typing import Any, List, Dict
-
-
-# def display_growth_charts(growth_data: List[Dict[str, Any]], ttm_value: float):
-#     def create_compact_line_chart(data, x_col, y_col, title, ttm_value):
-#         fig = go.Figure()
-
-#         # Historical data line
-#         fig.add_trace(
-#             go.Scatter(
-#                 x=data[x_col],
-#                 y=data[y_col],
-#                 mode="lines+markers",
-#                 line=dict(width=2, color="royalblue"),  # Professional blue color
-#                 marker=dict(
-#                     size=8, color="royalblue", line=dict(width=1, color="darkblue")
-#                 ),
-#                 name="Historical Net Income Per Share",
-#             )
-#         )
-
-#         # TTM value point
-#         latest_date = data[x_col].iloc[-1]
-#         fig.add_trace(
-#             go.Scatter(
-#                 x=[latest_date],
-#                 y=[ttm_value],
-#                 mode="markers+text",
-#                 marker=dict(
-#                     size=12,
-#                     color="firebrick",
-#                     symbol="diamond",
-#                     line=dict(width=2, color="darkred"),
-#                 ),
-#                 name="TTM Net Income Per Share",
-#                 text=[f"{ttm_value:.2f}"],  # Display TTM value as text
-#                 textposition="top center",
-#             )
-#         )
-
-#         # Horizontal line for TTM value
-#         fig.add_shape(
-#             type="line",
-#             x0=data[x_col].iloc[0],
-#             y0=ttm_value,
-#             x1=latest_date,
-#             y1=ttm_value,
-#             line=dict(color="firebrick", width=2, dash="dash"),
-#         )
-
-#         # Update layout for a more professional appearance
-#         fig.update_layout(
-#             title=title,
-#             title_font=dict(size=16, family="Arial", color="black"),
-#             xaxis_title="Year",
-#             yaxis_title="Net Income Per Share",
-#             plot_bgcolor="white",  # Clean background
-#             height=400,
-#             margin=dict(l=40, r=40, t=40, b=40),
-#             font=dict(family="Arial", size=12),
-#             showlegend=True,
-#             legend=dict(
-#                 orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1
-#             ),
-#             hovermode="x unified",  # Unified hover for better readability
-#         )
-
-#         # Customize axes
-#         fig.update_xaxes(
-#             tickmode="array",
-#             tickvals=data[x_col],
-#             ticktext=data[x_col],
-#             gridcolor="lightgrey",
-#         )
-#         fig.update_yaxes(gridcolor="lightgrey")
-
-#         return fig
-
-#     # Create and display the chart
-#     chart = create_compact_line_chart(
-#         data=pd.DataFrame(growth_data),
-#         x_col="FYDateEnding",
-#         y_col="netIncomePerShare",
-#         title="Net Income Per Share Growth",
-#         ttm_value=ttm_value,
-#     )
-
-#     st.plotly_chart(chart, use_container_width=True)
-
-
-# # Example usage with container data
-# growth_data = [
-#     {"FYDateEnding": "2020-12-31", "netIncomePerShare": 3.00},
-#     {"FYDateEnding": "2021-12-31", "netIncomePerShare": 4.50},
-#     {"FYDateEnding": "2022-12-31", "netIncomePerShare": 5.00},
-#     {"FYDateEnding": "2023-12-31", "netIncomePerShare": 6.00},
-# ]
-# display_growth_charts(growth_data, ttm_value=5.67)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# import streamlit as st
-# import plotly.graph_objects as go
-# from typing import Any, List, Dict
-
-
-# def display_growth_charts(growth_data: List[Dict[str, Any]], ttm_value: float):
-#     def create_compact_line_chart(data, x_col, y_col, title, ttm_value):
-#         fig = go.Figure()
-
-#         # Historical data line
-#         fig.add_trace(
-#             go.Scatter(
-#                 x=data[x_col],
-#                 y=data[y_col],
-#                 mode="lines+markers",
-#                 line=dict(width=2, color="blue"),
-#                 marker=dict(size=8),
-#                 name="Historical Net Income Per Share",
-#             )
-#         )
-
-#         # TTM value point
-#         latest_date = data[x_col].iloc[-1]
-#         fig.add_trace(
-#             go.Scatter(
-#                 x=[latest_date],
-#                 y=[ttm_value],
-#                 mode="markers",
-#                 marker=dict(size=12, color="red", symbol="diamond"),
-#                 name="TTM Net Income Per Share",
-#             )
-#         )
-
-#         # Horizontal line for TTM value
-#         fig.add_shape(
-#             type="line",
-#             x0=data[x_col].iloc[0],
-#             y0=ttm_value,
-#             x1=latest_date,
-#             y1=ttm_value,
-#             line=dict(color="red", width=1, dash="dash"),
-#         )
-
-#         fig.update_layout(
-#             title=title,
-#             xaxis_title="Year",
-#             yaxis_title="Net Income Per Share",
-#             plot_bgcolor="lightgrey",
-#             height=400,  # Slightly increased height to accommodate legend
-#             margin=dict(l=40, r=40, t=40, b=40),
-#             font=dict(family="Arial", size=12),
-#             showlegend=True,
-#             legend=dict(
-#                 orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1
-#             ),
-#         )
-
-#         fig.update_xaxes(tickmode="array", tickvals=data[x_col], ticktext=data[x_col])
-#         fig.update_yaxes(gridcolor="white", gridwidth=1)
-
-#         # Add annotation for TTM value
-#         fig.add_annotation(
-#             x=latest_date,
-#             y=ttm_value,
-#             text=f"TTM: {ttm_value:.2f}",
-#             showarrow=True,
-#             arrowhead=2,
-#             arrowsize=1,
-#             arrowwidth=2,
-#             arrowcolor="red",
-#             ax=40,
-#             ay=-40,
-#         )
-
-#         return fig
-
-#     # Assuming you have the TTM value available
-#     ttm_value = 5.67  # Replace with actual TTM value
-
-#     # Create and display the chart
-#     chart = create_compact_line_chart(
-#         data=pd.DataFrame(growth_data),
-#         x_col="FYDateEnding",
-#         y_col="netIncomePerShare",
-#         title="Net Income Per Share Growth",
-#         ttm_value=ttm_value,
-#     )
-
-#     st.plotly_chart(chart, use_container_width=True)
-
-
-# # Usage
-# growth_data = [...]  # Your list of dictionaries with historical data
-# display_growth_charts(growth_data, ttm_value=5.67)
