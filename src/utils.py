@@ -1,87 +1,63 @@
-import duckdb as db
+import sys
+import logging
 from typing import Any
-import polars as pl
-from api.fmp_client import FMPClient
+import asyncio
+from dataclasses import dataclass, field
+import httpx
+from config import settings
 
-
+# Define stock data type
 StockData = dict[str, list[dict[str, Any]]]
 
 
-# @st.cache_resource
-async def extract_source_data(ticker: str) -> StockData:
-    """Pull source data for a given ticker"""
-    source_data = await FMPClient().fetch_data(ticker)
-    return source_data
+def stock_logger():
+    """Configures logging for stock data dashboard project"""
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+        stream=sys.stdout,
+        force=True,  # Ensures unbuffered output
+    )
+    return logging.getLogger(__name__)
 
 
-def get_long_df(df: pl.DataFrame, var: str, value: str) -> pl.DataFrame:
-    """Convert wide dataframe to long format"""
-    longdf = df.unpivot(variable_name=var, value_name=value)
-    return longdf
+@dataclass
+class FMPClient:
+    """A client for interacting with the Financial Modeling Prep API."""
 
+    base_url: str = settings.base_url
+    api_key: str = settings.fmp_api_key
+    metric_types: list[str] = field(
+        default_factory=lambda: [
+            "profile",
+            "rating",
+            "quote",
+            "key-metrics-ttm",
+            "key-metrics",
+            "financial-growth",
+        ]
+    )  #
 
-# @st.cache_data
-def transform_profile(stock_data: StockData):
-    """Processes profile dataset"""
-    df = pl.DataFrame(stock_data.get("profile", None)).cast(pl.String())
+    async def get_data(self, client: httpx.Client, url: str) -> dict[str, Any]:
+        """Call API endpoint asynchronously"""
+        response = await client.get(url)
+        data = response.json()
+        return data
 
-    if df is None:
-        print("Dataframe is empty")
-        return None
+    async def fetch_data(self, ticker: str) -> dict[str, list[dict[str, Any]]]:
+        """Extracts data asynchronously from multiple FMP endpoints"""
+        urls = []
+        for metric in self.metric_types:
+            if metric in ["profile", "quote", "rating", "key-metrics-ttm"]:
+                endpoint = f"{self.base_url}/{metric}/{ticker}?apikey={self.api_key}"
+            else:
+                endpoint = f"{self.base_url}/{metric}/{ticker}?period=annual&apikey={self.api_key}"
+            urls.append(endpoint)
 
-    ndf = db.sql("""WITH ref_data AS (SELECT symbol AS Symbol, price AS Price, beta AS Beta,
-                 vol_avg AS 'Average Volume', mkt_cap AS 'Market Cap', last_div AS 'Last Dividend',
-                 low_high AS '52w Low - High', price_change AS 'Price Change', currency AS Currency,
-                 exchange AS Exchange, sector AS Sector, industry AS Industry, description AS Description
-                 FROM df
-                )
-                UNPIVOT ref_data
-                ON COLUMNS(*)
-                INTO
-                    NAME metric
-                    VALUE values
-                """).pl()
-    result_dict = dict(zip(ndf["metric"], ndf["values"]))
-    return result_dict
-
-
-# @st.cache_data
-def transform_rating(stock_data: StockData):
-    """Processes rating dataset"""
-    df = pl.DataFrame(stock_data.get("ratings", None)).cast(pl.String())
-
-    if df is None:
-        print("Dataframe is empty")
-        return None
-
-    ndf = db.sql("""WITH ref_data AS (SELECT symbol AS Symbol, date AS Date, rating AS Rating, score AS Score,
-                 recommendation AS Recommendation, dcf_score AS 'DCF Score', dcf_rec AS 'DCF Recommendation',
-                 roe_score AS 'ROE Score', roe_rec AS 'ROE Recommendation', roa_score AS 'ROA Score',
-                 roa_rec AS 'ROA Recommendation', de_score AS 'DE Score', de_rec AS 'DE Recommendation',
-                 pe_score AS 'PE Score', pe_rec AS 'PE Recommendation', pb_score AS 'PB Score',
-                 pb_rec AS 'PB Recommendation'
-                 FROM df
-                 )
-                 UNPIVOT ref_data
-                 ON COLUMNS(*)
-                 INTO
-                    NAME 'Metric'
-                    VALUE Rating
-                """).pl()
-    return ndf
-
-
-# @st.cache_data
-def transform_ratios(stock_data: StockData):
-    """Processes ratios dataset"""
-
-    df = pl.DataFrame(stock_data.get("ratios", None)).cast(pl.String())
-
-    # if df is None:
-    #     print("Dataframe is empty")
-    #     return None
-
-    xdf = db.sql(
-        """WITH ref_data AS (SELECT * EXCLUDE (symbol, pb_ratio, curr_ratio) FROM df) UNPIVOT ref_data ON COLUMNS(* EXCLUDE year) INTO NAME metric VALUE values; """
-    ).pl()
-    return xdf
+        async with httpx.AsyncClient() as client:
+            tasks = []
+            for url in urls:
+                tasks.append(asyncio.create_task(self.get_data(client, url)))
+            results = await asyncio.gather(*tasks)
+        return results

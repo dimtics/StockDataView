@@ -1,14 +1,13 @@
 from typing import Any
-import asyncio
 import polars as pl
 import streamlit as st
 import streamlit.components.v1 as components
 import plotly.graph_objects as go
-from utils import extract_source_data
+from data_validation import get_validated_stock_data
 
 
-def display_profile(profile_data: dict[str, Any]):
-    """Display company profile in sidebar"""
+def display_profile(profile_data: dict[str, Any]) -> None:
+    """Displays company profile in sidebar"""
     try:
         if profile_data:
             st.sidebar.write("## Company Profile")
@@ -21,9 +20,12 @@ def display_profile(profile_data: dict[str, Any]):
         st.write("Couldn't find company profile.")
 
 
-def display_quotes(quote_data: dict[str, Any], profile_data: dict[str, Any]):
+def display_quotes(quote_data: dict[str, Any], profile_data: dict[str, Any]) -> None:
+    """Displays company quotes in main area"""
 
-    def display_stock_metric(header, value):
+    def display_stock_metric(header, value) -> None:
+        """Displays quotes in capsule at the top of the page"""
+
         html_content = f"""
             <style>
             .stock-box {{
@@ -52,8 +54,8 @@ def display_quotes(quote_data: dict[str, Any], profile_data: dict[str, Any]):
             </div>
         """
         st.html(html_content)
+
     try:
-        #label = quote_data["symbol"]
         stock_price = f"${quote_data['price']:,.2f}"
         change_price = f"{quote_data['change_percent']:,.2f}%"
         year_low = f"${quote_data['year_low']:,.2f}"
@@ -63,8 +65,8 @@ def display_quotes(quote_data: dict[str, Any], profile_data: dict[str, Any]):
         earning_date = quote_data["earning_date"][:10]
         eps = f"{quote_data['eps']:.2f}"
         shares_outstanding = f"{quote_data["shares_outstanding"]/1_000_000_000:.2f}B"
-        #beta = profile_data["beta"]
 
+        # Set page top quotes layout
         col1, col2, col3, col4, col5, col6, col7, col8, col9 = st.columns(9)
 
         with col1:
@@ -90,7 +92,6 @@ def display_quotes(quote_data: dict[str, Any], profile_data: dict[str, Any]):
 
 
 def display_metric_tables(data: list[dict[str, Any]]):
-
     def generate_table_rows(data: dict[str, Any]):  # table_name: str
         rows_html = ""
         for metric, value in data.items():
@@ -140,9 +141,7 @@ def display_metric_tables(data: list[dict[str, Any]]):
                 {generate_table_rows(data)}
             </div>
             """
-        return components.html(table_html, height=185) #210
-
-
+        return components.html(table_html, height=185)  # 210
 
     # Get data and generate tables
     quote_data, key_metrics_ttm_data, growth_data, ratings_data = data
@@ -177,7 +176,7 @@ def display_metric_tables(data: list[dict[str, Any]]):
     }
 
     rating_data = {
-        #"Symbol": f"{latest_ratings_data['symbol']}",
+        # "Symbol": f"{latest_ratings_data['symbol']}",
         "Date": f"{latest_ratings_data['date']}",
         "Rating": f"{latest_ratings_data['rating']}",
         "Score": f"{latest_ratings_data['score']}",
@@ -188,19 +187,27 @@ def display_metric_tables(data: list[dict[str, Any]]):
     container = st.empty()
     col1, col2, col3, col4, col5 = st.columns(5)
     with col1:
-        container.markdown(display_table(valuation_data, "Valuation"), unsafe_allow_html=True)
+        container.markdown(
+            display_table(valuation_data, "Valuation"), unsafe_allow_html=True
+        )
         container.empty()
 
     with col2:
-        container.markdown(display_table(freecashflow_data, "Cash Flow"), unsafe_allow_html=True)
+        container.markdown(
+            display_table(freecashflow_data, "Cash Flow"), unsafe_allow_html=True
+        )
         container.empty()
 
     with col3:
-        container.markdown(display_table(growth_metric_data, "Growth"), unsafe_allow_html=True)
+        container.markdown(
+            display_table(growth_metric_data, "Growth"), unsafe_allow_html=True
+        )
         container.empty()
 
     with col4:
-        container.markdown(display_table(dividend_data, "Dividend"), unsafe_allow_html=True)
+        container.markdown(
+            display_table(dividend_data, "Dividend"), unsafe_allow_html=True
+        )
         container.empty()
 
     with col5:
@@ -208,9 +215,9 @@ def display_metric_tables(data: list[dict[str, Any]]):
         container.empty()
 
 
-
-def display_metrics_charts(metrics_data: list[dict[str, Any]], key_metrics_ttm_data: dict[str, Any]):
-
+def display_metrics_charts(
+    metrics_data: list[dict[str, Any]], key_metrics_ttm_data: dict[str, Any]
+):
     def create_compact_line_chart(data: pl.DataFrame, x_col, y_col, title, ttm_value):
         fig = go.Figure()
 
@@ -221,8 +228,10 @@ def display_metrics_charts(metrics_data: list[dict[str, Any]], key_metrics_ttm_d
                 y=data[y_col],
                 mode="lines+markers",
                 line=dict(width=2, color="royalblue"),  # Professional blue color
-                marker=dict(size=6, color="royalblue", line=dict(width=1, color="darkblue")),
-                name=f"Historical",
+                marker=dict(
+                    size=6, color="royalblue", line=dict(width=1, color="darkblue")
+                ),
+                name="Historical",
             )
         )
 
@@ -239,7 +248,7 @@ def display_metrics_charts(metrics_data: list[dict[str, Any]], key_metrics_ttm_d
                     symbol="diamond",
                     line=dict(width=2, color="darkred"),
                 ),
-                name=f"TTM",
+                name="TTM",
                 text=[f"{ttm_value:.2f}"],  # Display TTM value as text
                 textposition="top center",
             )
@@ -299,8 +308,6 @@ def display_metrics_charts(metrics_data: list[dict[str, Any]], key_metrics_ttm_d
         print("Dataframe is empty")
         return None
 
-
-
     def plot_chart(metrics: list[tuple[str, str]]):
         for metric, title in metrics:
             ttm_value = key_metrics_ttm_data[f"{metric}_ttm"]
@@ -317,30 +324,40 @@ def display_metrics_charts(metrics_data: list[dict[str, Any]], key_metrics_ttm_d
                 use_container_width=True,
             )
 
-
-    col1, col2  = st.columns(2)
+    col1, col2 = st.columns(2)
     col3, col4 = st.columns(2)
     col5, col6 = st.columns(2)
 
     with col1:
-        col1_metrics = [("rev_per_share", "Rev/Share"),]
+        col1_metrics = [
+            ("rev_per_share", "Rev/Share"),
+        ]
         plot_chart(col1_metrics)
     with col2:
-        col2_metrics = [("pe_ratio", "PE Ratio"),]
+        col2_metrics = [
+            ("pe_ratio", "PE Ratio"),
+        ]
         plot_chart(col2_metrics)
     with col3:
-        col3_metrics = [("fcf_per_share", "FCF/Share"),]
+        col3_metrics = [
+            ("fcf_per_share", "FCF/Share"),
+        ]
         plot_chart(col3_metrics)
     with col4:
-        col4_metrics = [("ev_over_ebitda", "EV/EBITDA"),]
+        col4_metrics = [
+            ("ev_over_ebitda", "EV/EBITDA"),
+        ]
         plot_chart(col4_metrics)
     with col5:
-        col5_metrics = [("ev_to_fcf", "EV/FCF"),]
+        col5_metrics = [
+            ("ev_to_fcf", "EV/FCF"),
+        ]
         plot_chart(col5_metrics)
     with col6:
-        col6_metrics = [("fcf_yield", "FCF Yield"),]
+        col6_metrics = [
+            ("fcf_yield", "FCF Yield"),
+        ]
         plot_chart(col6_metrics)
-
 
 
 def display_growth_charts(growth_data: list[dict[str, Any]]):
@@ -357,7 +374,7 @@ def display_growth_charts(growth_data: list[dict[str, Any]]):
                 marker=dict(
                     size=6, color="royalblue", line=dict(width=1, color="darkblue")
                 ),
-                name="", #f"Historical {title}",
+                name="",  # f"Historical {title}",
             )
         )
 
@@ -400,12 +417,11 @@ def display_growth_charts(growth_data: list[dict[str, Any]]):
         )
         .sort("date")
         .drop("date")
-    )# pl.col("col_name").list.eval(pl.element().sqrt()).
+    )  # pl.col("col_name").list.eval(pl.element().sqrt()).
 
     if df is None:
         print("Dataframe is empty")
         return None
-
 
     def plot_chart(metrics: list[tuple[str, str]]):
         for metric, title in metrics:
@@ -426,35 +442,45 @@ def display_growth_charts(growth_data: list[dict[str, Any]]):
     col5, col6 = st.columns(2)
 
     with col1:
-        col1_metrics = [("rev_growth", "Rev Growth"),]
+        col1_metrics = [
+            ("rev_growth", "Rev Growth"),
+        ]
         plot_chart(col1_metrics)
     with col2:
-        col2_metrics = [("eps_growth", "EPS Growth"),]
+        col2_metrics = [
+            ("eps_growth", "EPS Growth"),
+        ]
         plot_chart(col2_metrics)
     with col3:
-        col3_metrics = [("dps_growth", "DPS Growth"),]
+        col3_metrics = [
+            ("dps_growth", "DPS Growth"),
+        ]
         plot_chart(col3_metrics)
     with col4:
-        col4_metrics = [("fcf_growth", "FCF Growth"),]
+        col4_metrics = [
+            ("fcf_growth", "FCF Growth"),
+        ]
         plot_chart(col4_metrics)
     with col5:
-        col5_metrics = [("debt_growth", "Debt Growth"),]
+        col5_metrics = [
+            ("debt_growth", "Debt Growth"),
+        ]
         plot_chart(col5_metrics)
     # with col6:
     #     col6_metrics = [("fcf_yield", "FCF Yield"),]
     #     plot_chart(col6_metrics)
 
 
-
 def main():
     # Main UI
     st.set_page_config(
-    page_title="Stock Valuation Dashboard",
-    layout="wide",
+        page_title="Stock Valuation Dashboard",
+        layout="wide",
     )
 
     # Custom CSS
-    st.markdown("""
+    st.markdown(
+        """
     <style>
     .custom-divider {
         margin-top: 5px;  /* Adjust this value to control space above */
@@ -463,10 +489,12 @@ def main():
         border-top: 1px solid rgba(0, 0, 0, 0.1);
     }
     </style>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
     st.sidebar.markdown(
-            """
+        """
             <style>
             .stTextInput > div > div > input {
                 border: 0.5px solid gray;
@@ -474,12 +502,11 @@ def main():
             }
             </style>
             """,
-            unsafe_allow_html=True,
-        )
-
+        unsafe_allow_html=True,
+    )
 
     st.title("Stock Valuation Dashboard")
-    #st.divider()
+    # st.divider()
     st.subheader(
         "Get stock quality and valuation insights from historical financial data.",
         divider="gray",
@@ -493,7 +520,7 @@ def main():
 
     if ticker and analyze_button:
         # Get data
-        stock_data = asyncio.run(extract_source_data(ticker))
+        stock_data = get_validated_stock_data(ticker)
         profile_data = stock_data["profile"][0]
         quote_data = stock_data["quote"][0]
         ratings_data = stock_data["ratings"]
@@ -501,15 +528,19 @@ def main():
         key_metrics_data = stock_data["key_metrics"]
         growth_data = stock_data["growth"]
 
-        table_data = [quote_data, key_metrics_ttm_data, growth_data, ratings_data,]
+        table_data = [
+            quote_data,
+            key_metrics_ttm_data,
+            growth_data,
+            ratings_data,
+        ]
 
         if stock_data:
-
             # Display ticker profile
             display_profile(profile_data)
 
             # Display ticker quotes
-            #st.markdown("#### Key Metrics")
+            # st.markdown("#### Key Metrics")
             display_quotes(quote_data, profile_data)
             st.markdown('<div style="height: 10px;"></div>', unsafe_allow_html=True)
             st.markdown('<hr class="custom-divider">', unsafe_allow_html=True)
@@ -521,14 +552,19 @@ def main():
 
             left, right = st.columns(2)
             with left:
-                st.markdown("""<h4 style="text-align: center;">Valuation Metrics</h4>""", unsafe_allow_html=True)
+                st.markdown(
+                    """<h4 style="text-align: center;">Valuation Metrics</h4>""",
+                    unsafe_allow_html=True,
+                )
                 display_metrics_charts(key_metrics_data, key_metrics_ttm_data)
             with right:
-                st.markdown("""<h4 style="text-align: center;">Growth Metrics</h4>""", unsafe_allow_html=True)
+                st.markdown(
+                    """<h4 style="text-align: center;">Growth Metrics</h4>""",
+                    unsafe_allow_html=True,
+                )
                 display_growth_charts(growth_data)
 
             st.divider()
-
 
 
 if __name__ == "__main__":
