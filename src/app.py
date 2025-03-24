@@ -1,8 +1,10 @@
 from typing import Any
+
+import plotly.graph_objects as go
 import polars as pl
 import streamlit as st
 import streamlit.components.v1 as components
-import plotly.graph_objects as go
+
 from data_validation import get_validated_stock_data
 
 
@@ -176,7 +178,6 @@ def display_metric_tables(data: list[dict[str, Any]]):
     }
 
     rating_data = {
-        # "Symbol": f"{latest_ratings_data['symbol']}",
         "Date": f"{latest_ratings_data['date']}",
         "Rating": f"{latest_ratings_data['rating']}",
         "Score": f"{latest_ratings_data['score']}",
@@ -218,24 +219,26 @@ def display_metric_tables(data: list[dict[str, Any]]):
 def display_metrics_charts(
     metrics_data: list[dict[str, Any]], key_metrics_ttm_data: dict[str, Any]
 ):
-    def create_compact_line_chart(data: pl.DataFrame, x_col, y_col, title, ttm_value):
+    def create_compact_bar_chart(data: pl.DataFrame, x_col, y_col, title, ttm_value):
         fig = go.Figure()
 
-        # Historical data line
+        # Historical data bars
         fig.add_trace(
-            go.Scatter(
+            go.Bar(
                 x=data[x_col],
                 y=data[y_col],
-                mode="lines+markers",
-                line=dict(width=2, color="royalblue"),  # Professional blue color
-                marker=dict(
-                    size=6, color="royalblue", line=dict(width=1, color="darkblue")
-                ),
                 name="Historical",
+                marker=dict(
+                    color="#4C78A8",  # Modern blue
+                    line=dict(width=1.5, color="#2E2E2E"),  # Dark outline
+                ),
+                width=0.75,
+                opacity=0.9,
+                hovertemplate="%{x}: %{y:.2f}",
             )
         )
 
-        # TTM value point
+        # TTM value with high-contrast marker
         latest_date = data[x_col].dt.max()
         fig.add_trace(
             go.Scatter(
@@ -243,53 +246,103 @@ def display_metrics_charts(
                 y=[ttm_value],
                 mode="markers+text",
                 marker=dict(
-                    size=6,
-                    color="firebrick",
+                    size=14,
+                    color="#F28C38",  # Vibrant orange
                     symbol="diamond",
-                    line=dict(width=2, color="darkred"),
+                    line=dict(width=2, color="#D76F1E"),  # Darker orange outline
                 ),
                 name="TTM",
-                text=[f"{ttm_value:.2f}"],  # Display TTM value as text
+                text=[f"{ttm_value:.2f}"],
                 textposition="top center",
+                textfont=dict(
+                    size=13, color="#2E2E2E", weight="bold"
+                ),  # Dark gray for visibility
+                hovertemplate="TTM: %{y:.2f}",
             )
         )
 
-        # Horizontal line for TTM value
+        # TTM reference line
         fig.add_shape(
             type="line",
             x0=data[x_col].dt.min(),
             y0=ttm_value,
             x1=latest_date,
             y1=ttm_value,
-            line=dict(color="firebrick", width=2, dash="dash"),
+            line=dict(
+                color="#F28C38",
+                width=2,
+                dash="dash",
+            ),
         )
 
-        # Update layout for a more professional appearance
+        # Adaptive layout
         fig.update_layout(
-            title="",
-            title_font=dict(size=16, family="Arial", color="black"),
+            title=dict(
+                text=title,
+                font=dict(size=16, color="#2E2E2E"),  # Darker gray for contrast
+                x=0.5,
+                xanchor="center",
+                y=0.95,
+                yanchor="top",
+            ),
             xaxis_title="Year",
             yaxis_title=title,
-            plot_bgcolor="white",  # Clean background
-            height=400,
-            margin=dict(l=40, r=40, t=40, b=40),
-            font=dict(family="Arial", size=12),
+            plot_bgcolor="rgba(0,0,0,0)",  # Transparent plot
+            paper_bgcolor="rgba(0,0,0,0)",  # Transparent paper
+            height=450,
+            margin=dict(l=60, r=40, t=80, b=60),
+            font=dict(
+                family="Inter, Arial, sans-serif",
+                size=13,
+                color="#2E2E2E",  # Dark gray text
+            ),
             showlegend=True,
             legend=dict(
-                orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1
+                orientation="h",
+                yanchor="bottom",
+                y=1.02,
+                xanchor="right",
+                x=1,
+                font=dict(size=12),
+                bgcolor="rgba(255,255,255,0.8)",  # Light background for legend on white
             ),
-            hovermode="x unified",  # Unified hover for better readability
+            hovermode="x unified",
+            transition_duration=500,
         )
 
-        # Customize axes
+        # Enhanced axes
         fig.update_xaxes(
             tickmode="array",
             tickvals=data[x_col],
-            ticktext=data[x_col],
-            gridcolor="lightgrey",
+            ticktext=data[x_col].dt.strftime("%Y"),
+            gridcolor="rgba(0,0,0,0.2)",  # Darker gridlines for white background
+            linecolor="#666666",
+            linewidth=1.5,
+            ticks="outside",
+            tickfont=dict(size=12),
+            title_font=dict(size=14),
+            zeroline=False,
         )
-        fig.update_yaxes(gridcolor="lightgrey")
 
+        fig.update_yaxes(
+            gridcolor="rgba(0,0,0,0.2)",  # Darker gridlines
+            linecolor="#666666",
+            linewidth=1.5,
+            tickfont=dict(size=12),
+            title_font=dict(size=14),
+            zeroline=False,
+            showline=True,
+        )
+
+        # Enhanced hover
+        fig.update_traces(
+            hoverlabel=dict(
+                bgcolor="#FFFFFF",  # White hover background
+                font_size=12,
+                font_color="#2E2E2E",  # Dark gray text
+                bordercolor="#666666",
+            ),
+        )
         return fig
 
     # Create charts
@@ -304,7 +357,7 @@ def display_metrics_charts(
         .drop("date")
     )
 
-    if df is None:
+    if df is None or df.is_empty():
         print("Dataframe is empty")
         return None
 
@@ -314,7 +367,7 @@ def display_metrics_charts(
             dfx = df.select("FYDateEnding", f"{metric}")
 
             st.plotly_chart(
-                create_compact_line_chart(
+                create_compact_bar_chart(
                     dfx,
                     x_col="FYDateEnding",
                     y_col=f"{metric}",
@@ -361,48 +414,82 @@ def display_metrics_charts(
 
 
 def display_growth_charts(growth_data: list[dict[str, Any]]):
-    def create_compact_line_chart(data: pl.DataFrame, x_col, y_col, title):
+    def create_compact_bar_chart(data: pl.DataFrame, x_col, y_col, title):
         fig = go.Figure()
 
-        # Historical data line
         fig.add_trace(
-            go.Scatter(
+            go.Bar(
                 x=data[x_col],
                 y=data[y_col],
-                mode="lines+markers",
-                line=dict(width=2, color="royalblue"),  # Professional blue color
+                name="",
                 marker=dict(
-                    size=6, color="royalblue", line=dict(width=1, color="darkblue")
+                    color="#54A24B",  # Modern green
+                    line=dict(width=1.5, color="#2E2E2E"),  # Dark outline
                 ),
-                name="",  # f"Historical {title}",
+                width=0.7,
+                hovertemplate="%{x}: %{y:.2f}%",
             )
         )
 
-        # Update layout for a more professional appearance
         fig.update_layout(
-            title="",
-            title_font=dict(size=16, family="Arial", color="black"),
-            xaxis_title="Year",
-            yaxis_title=title,
-            plot_bgcolor="white",  # Clean background
-            height=400,
-            margin=dict(l=40, r=40, t=40, b=40),
-            font=dict(family="Arial", size=12),
-            showlegend=True,
-            legend=dict(
-                orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1
+            title=dict(
+                text=title,
+                font=dict(size=18, color="#2E2E2E"),  # Darker gray
+                x=0.5,
+                xanchor="center",
+                y=0.95,
+                yanchor="top",
             ),
-            hovermode="x unified",  # Unified hover for better readability
+            xaxis_title="Year",
+            yaxis_title="Growth Rate (%)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            paper_bgcolor="rgba(0,0,0,0)",
+            height=450,
+            margin=dict(l=50, r=50, t=80, b=60),
+            font=dict(
+                family="Inter, Arial, sans-serif",
+                size=13,
+                color="#2E2E2E",  # Dark gray text
+            ),
+            showlegend=False,
+            hovermode="x unified",
+            barmode="group",
+            transition_duration=400,
         )
 
-        # Customize axes
         fig.update_xaxes(
             tickmode="array",
             tickvals=data[x_col],
-            ticktext=data[x_col],
-            gridcolor="lightgrey",
+            ticktext=data[x_col].dt.strftime("%Y"),
+            gridcolor="rgba(0,0,0,0.2)",  # Darker gridlines
+            linecolor="#666666",
+            linewidth=1,
+            ticks="outside",
+            tickfont=dict(size=12),
+            title_font=dict(size=14),
+            zeroline=False,
         )
-        fig.update_yaxes(gridcolor="lightgrey")
+
+        fig.update_yaxes(
+            gridcolor="rgba(0,0,0,0.2)",
+            linecolor="#666666",
+            linewidth=1,
+            ticksuffix="%",
+            tickfont=dict(size=12),
+            title_font=dict(size=14),
+            zeroline=False,
+            showline=True,
+        )
+
+        fig.update_traces(
+            opacity=0.95,
+            hoverlabel=dict(
+                bgcolor="#FFFFFF",
+                font_size=12,
+                font_color="#2E2E2E",
+                bordercolor="#666666",
+            ),
+        )
 
         return fig
 
@@ -417,9 +504,9 @@ def display_growth_charts(growth_data: list[dict[str, Any]]):
         )
         .sort("date")
         .drop("date")
-    )  # pl.col("col_name").list.eval(pl.element().sqrt()).
+    )
 
-    if df is None:
+    if df is None or df.is_empty():
         print("Dataframe is empty")
         return None
 
@@ -428,7 +515,7 @@ def display_growth_charts(growth_data: list[dict[str, Any]]):
             dfx = df.select("Year", f"{metric}")
 
             st.plotly_chart(
-                create_compact_line_chart(
+                create_compact_bar_chart(
                     dfx,
                     x_col="Year",
                     y_col=f"{metric}",
