@@ -1,7 +1,7 @@
 [project]
-name = "stock-valuation-app"
+name = "stockdataview"
 version = "0.1.0"
-description = "A single-page web app displaying stock data, growth charts, and valuation insights."
+description = "A containerized application for visualizing stock fundamentals, ratings, and historical data using the Financial Modeling Prep (FMP) API."
 readme = "README.md"
 authors = [
     { name = "Dimeji Salau", email = "dimejisalau@protonmail.com" }

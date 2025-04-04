@@ -793,7 +793,7 @@ wheels = [
 ]
 
 [[package]]
-name = "stock-valuation-app"
+name = "stockdataview"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
