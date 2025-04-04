@@ -1,38 +1,32 @@
-name: CI/CD
+name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main ]
+    branches: [dev, main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
-  test:
+  ci:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.11'
-    - name: Install dependencies
-      run: |
-        pip install uv
-        uv pip install -e .[dev]
-    - name: Run tests
-      run: pytest
+      - uses: actions/checkout@v4
+      - name: Build dev image
+        run: make docker-build
+      - name: Run linting
+        run: make docker-check
+      - name: Run tests
+        run: make docker-test
 
-  deploy:
-    needs: test
-    runs-on: ubuntu-latest
+  cd:
+    needs: ci
     if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Build and push Docker image
-      env:
-        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-      run: |
-        docker build -t your-docker-repo/stock-valuation-app:latest .
-        echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
-        docker push your-docker-repo/stock-valuation-app:latest
+      - uses: actions/checkout@v4
+      - name: Build prod image
+        run: make docker-build-prod
+      - name: Login to Docker Hub
+        run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+      - name: Push prod image
+        run: make docker-push

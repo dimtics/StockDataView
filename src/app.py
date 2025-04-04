@@ -592,10 +592,10 @@ def main():
         unsafe_allow_html=True,
     )
 
-    st.title("Stock Valuation Dashboard")
+    st.title("Stock Data View")
     # st.divider()
     st.subheader(
-        "Get stock quality and valuation insights from historical financial data.",
+        "Visualize stock fundamentals, ratings, and historical data using the Financial Modeling Prep (FMP) API",
         divider="gray",
     )
 
