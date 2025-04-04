@@ -592,7 +592,7 @@ def main():
         unsafe_allow_html=True,
     )
 
-    st.title("Stock Data View")
+    st.title("StockDataView")
     # st.divider()
     st.subheader(
         "Visualize stock fundamentals, ratings, and historical data using the Financial Modeling Prep (FMP) API",
