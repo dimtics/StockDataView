@@ -30,7 +30,7 @@ StockDataView is a Streamlit application designed to display and visualize stock
 2.  **Build the Docker Image:**
 
     ```bash
-    make docker-build-prod
+    make docker-build
     ```
 
 3.  **Run the Docker Container:**
@@ -65,11 +65,11 @@ uv sync
 ## Makefile Commands
 The Makefile automates common development tasks:
 
-* `make docker-build`: Builds dev image.
+* `make docker-build`: Builds the Docker image.
 * `make docker-check`: Lints code using ruff.
 * `make docker-test`: Runs tests.
-* `make docker-build-prod`: Builds prod image
 * `make docker-run`: Runs the Docker container.
+
 
 ## CI/CD (GitHub Actions)
 

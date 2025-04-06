@@ -8,28 +8,16 @@ on:
 jobs:
   ci:
     runs-on: ubuntu-latest
-    container:
-      image: ubuntu:22.04-slim # Use a lightweight container for the CI job
-
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build dev image
-        run: make docker-build
-
-      - name: Run linting
-        run: make docker-check
-
-      - name: Run tests
-        run: make docker-test
+      - name: Build and Check (using multi-stage Dockerfile)
+        run: make docker-check-ci
 
   cd:
     needs: ci
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    container:
-      image: ubuntu:22.04-slim # Use a lightweight container for the CD job
-
     steps:
       - uses: actions/checkout@v4
 
