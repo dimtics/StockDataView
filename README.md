@@ -1,92 +1,87 @@
-# Stock Valuation Dashboard
+# StockDataView
 
-## Overview
+StockDataView is a Streamlit application designed to display and visualize stock data fetched from the Financial Modeling Prep (FMP) API. It provides users with bar charts, tables of stock fundamentals, and ratings for a given stock ticker.
 
-This project is a web-based stock valuation dashboard that helps investors analyze dividend growth stocks. It provides insights into stock quality and valuation based on historical financial data.
+## Features
 
-Key features:
-- Fetches financial data from Financial Modeling Prep API
-- Calculates growth rates for revenue, dividends, cash flow, and other metrics
-- Determines if a stock is a quality dividend growth stock
-- Assesses whether a stock is undervalued or reasonably valued
-- Visualizes key metrics and growth rates
+* **Stock Data Visualization:** Presents stock data in clear and interactive bar charts.
+* **Fundamental Data Tables:** Displays key stock fundamentals in easy-to-read tables.
+* **Stock Ratings:** Shows ratings information for selected stocks.
+* **Containerized Application:** Easily deployable via Docker.
+* **API Key Input:** Requires users to provide their FMP API key for data retrieval.
+* **Automated CI/CD:** Uses GitHub Actions for continuous integration and deployment.
+* **Package Management:** Uses `uv` and `pyproject.toml` for dependency management.
+* **Makefile Automation:** Includes a Makefile for streamlined development and deployment workflows.
 
-## Tech Stack
+## Prerequisites
 
-- Python 3.11+
-- FastAPI: Web framework for building APIs
-- Dash: React-based framework for building analytical web applications
-- Polars: Fast DataFrame library for data manipulation
-- Pydantic: Data validation using Python type annotations
-- PyArrow: Efficient data interchange format
-- DuckDB: Embedded analytical database
-- uv: Python packaging and dependency management tool
-- Docker: Containerization
-- GitHub Actions: CI/CD pipeline
+* Docker (for running the application)
+* An API key from Financial Modeling Prep (FMP)
 
-## Project Structure
+## Getting Started
 
-stock_valuation_app/
-├── .github/workflows/ # CI/CD configuration
-├── src/
-│ └── stock_valuation_app/
-│ ├── api/ # FastAPI routes
-│ ├── data/ # Data fetching and processing
-│ ├── models/ # Pydantic models
-│ ├── services/ # Business logic
-│ └── ui/ # Dash dashboard
-├── tests/ # Unit and integration tests
-├── Dockerfile
-├── docker-compose.yml
-├── pyproject.toml # Project metadata and dependencies
-├── README.md
-└── uv.lock # Dependency lock file
+1.  **Clone the Repository:**
 
+    ```bash
+    git clone https://github.com/dimtics/StockDataView.git
+    cd StockDataView
+    ```
 
+2.  **Build the Docker Image:**
 
-## Setup and Installation
+    ```bash
+    make docker-build-prod
+    ```
 
-1. Clone the repository:
-git clone https://github.com/dimtics/stock_valuation_app.git
-cd stock_valuation_app
+3.  **Run the Docker Container:**
 
-2. Install uv and project dependencies:
-pip install uv
-uv pip install -e .
+    ```bash
+    docker run -p 8501:8501 -e FMP_API_KEY=<your-fmp-api-key> skytics/stockdataview
+    ```
 
-3. Set up environment variables:
-Create a `.env` file in the project root and add your Financial Modeling Prep API key:
-FMP_API_KEY=your_api_key_here
+    Replace `<your-fmp-api-key>` with your actual FMP API key.
 
-4. Run the application:
-uvicorn stock_valuation_app:app --reload
+4.  **Access the Application:**
 
-5. Open your browser and navigate to `http://localhost:8000/dashboard` to view the dashboard.
+    Open your web browser and navigate to `http://localhost:8501`.
 
+5. **Usage**
+* Once the app is running, enter a stock ticker (e.g., AAPL) in the Streamlit interface.
+* View the displayed bar charts, tables, stock fundamentals, and ratings fetched from the FMP API.
 
-## Docker Deployment
+## Development
 
-To run the application using Docker:
+### Package Management (uv)
 
-1. Build the Docker image:
-docker build -t stock-valuation-app .
-docker run -p 8000:8000 -e FMP_API_KEY=your_api_key_here stock-valuation-app
+* This project uses `uv` for package management. Dependencies are defined in `pyproject.toml`.
+* Sync dependencies from `pyproject.toml`.
 
-Alternatively, use Docker Compose:
-docker-compose up
+To install dependencies:
 
+```bash
+uv sync
+```
 
+## Makefile Commands
+The Makefile automates common development tasks:
 
-## Usage
+* `make docker-build`: Builds dev image.
+* `make docker-check`: Lints code using ruff.
+* `make docker-test`: Runs tests.
+* `make docker-build-prod`: Builds prod image
+* `make docker-run`: Runs the Docker container.
 
-1. Enter a stock symbol in the input field on the dashboard.
-2. Click the "Analyze" button to fetch and analyze the stock data.
-3. View the growth rates, quality assessment, and valuation results.
+## CI/CD (GitHub Actions)
+
+The `.github/workflows/ci-cd.yml` file defines the CI/CD workflow, which:
+
+* Builds the Docker image on push to the `main` branch.
+* Pushes the image to Docker Hub.
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! Please feel free to submit a pull request.
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the `LICENSE` file for details.
