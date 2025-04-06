@@ -2,36 +2,36 @@
 
 # Dependency management
 deps:
-    uv sync
+	uv sync
 
 # Linting and formatting
 check:
-    - uv run ruff check . --fix
-    - uv run ruff format .
+	- uv run ruff check . --fix
+	- uv run ruff format .
 
 # Testing
 test:
-    uv run pytest -v
+	uv run pytest -v
 
 # Dev: Build the dev image (builder stage)
 docker-build:
-    docker build --target builder -t stockdataview:dev .
+	docker build --target builder -t stockdataview:dev .
 
 # Dev: ruff check
 docker-check: docker-build
-    docker run --rm -v $(PWD):/app stockdataview:dev ruff check .
+	docker run --rm -v $(PWD):/app stockdataview:dev ruff check .
 
 # Dev: test
 docker-test: docker-build
-    docker run --rm stockdataview:dev pytest -v
+	docker run --rm stockdataview:dev pytest -v
 
 # Prod: Build the production image (production stage)
 docker-build-prod:
-    docker build --target production -t skytics/stockdataview:latest .
+	docker build --target production -t skytics/stockdataview:latest .
 
 # Prod: Run the Streamlit app (production image)
 docker-run: docker-build-prod
-    docker run --rm -e API_KEY=${API_KEY} -p 8501:8501 skytics/stockdataview:latest
+	docker run --rm -e API_KEY=${API_KEY} -p 8501:8501 skytics/stockdataview:latest
 
 # Prod: Tag production image
 docker-tag: docker-build-prod
@@ -48,9 +48,9 @@ docker-clean:
 
 # CI specific target: Build up to the builder stage and run checks/tests
 docker-check-ci: docker-build
-    docker run --rm -v $(PWD):/app stockdataview:dev uv run ruff check .
-    docker run --rm -v $(PWD):/app stockdataview:dev uv run pytest -v
+	- docker run --rm -v $(PWD):/app stockdataview:dev uv run ruff check .
+	- docker run --rm -v $(PWD):/app stockdataview:dev uv run pytest -v
 
 # All-in-one
 all: check test docker-build
-    @echo "All checks passed!"
+	@echo "All checks passed!"
