@@ -15,39 +15,55 @@ StockDataView is a Streamlit application designed to display and visualize stock
 
 ## Prerequisites
 
-* Docker (for running the application)
-* An API key from Financial Modeling Prep (FMP)
+- **Docker**: Required to build and run the application container
+- **FMP API Key**: Obtain a free or paid API key from [Financial Modeling Prep](https://financialmodelingprep.com/developer/docs/)
+- **Git**: To clone the repository (optional)
 
-## Getting Started
+## Installation
 
-1.  **Clone the Repository:**
+### Option 1: Use the Pre-Built Image
 
-    ```bash
-    git clone https://github.com/dimtics/StockDataView.git
-    cd StockDataView
-    ```
+1. **Pull the Image from Docker Hub**:
+   ```bash
+   docker pull skytics/stockdataview:latest
+   ```
 
-2.  **Build the Docker Image:**
+2. **Run the Container**:
+    * Replace `your-api-key` with your FMP API key:
+   ```bash
+   docker run -p 8501:8501 -e FMP_API_KEY=your-api-key skytics/stockdataview:latest
+   ```
 
-    ```bash
-    make docker-build
-    ```
+3. Open `http://localhost:8501` in your browser
 
-3.  **Run the Docker Container:**
 
-    ```bash
-    docker run -p 8501:8501 -e FMP_API_KEY=<your-fmp-api-key> skytics/stockdataview
-    ```
+### Option 2: Build and Run Locally
 
-    Replace `<your-fmp-api-key>` with your actual FMP API key.
+1. **Clone the Repository**:
+   ```bash
+   git clone https://github.com/your-username/StockDataView.git
+   cd StockDataView
+   ```
 
-4.  **Access the Application:**
+2. **Build the Production Image**:
+   ```bash
+   make docker-build-prod
+   ```
+    * This builds only the `production` stage of the multi-stage Dockerfile
 
-    Open your web browser and navigate to `http://localhost:8501`.
+3. **Run the Container**:
+    * Replace `your-api-key` with your FMP API key:
+   ```bash
+   docker run -p 8501:8501 -e FMP_API_KEY=your-api-key skytics/stockdataview:latest
+   ```
 
-5. **Usage**
+4. Open `http://localhost:8501` in your browser
+
+
+## Usage
 * Once the app is running, enter a stock ticker (e.g., AAPL) in the Streamlit interface.
 * View the displayed bar charts, tables, stock fundamentals, and ratings fetched from the FMP API.
+
 
 ## Development
 
@@ -62,21 +78,22 @@ To install dependencies:
 uv sync
 ```
 
-## Makefile Commands
-The Makefile automates common development tasks:
+### Makefile Commands
+* `make docker-build-prod`: Build the production image
+* `make docker-run`: Run the production image
+* `make docker-build-dev`: Build the dev image (for linting/testing)
+* `make docker-check`: Run linting in the dev image
+* `make docker-test`: Run tests in the dev image
+* `make docker-clean`: Remove all images
 
-* `make docker-build`: Builds the Docker image.
-* `make docker-check`: Lints code using ruff.
-* `make docker-test`: Runs tests.
-* `make docker-run`: Runs the Docker container.
+### Multi-Stage Dockerfile
+* `builder` stage: Used for development (linting, testing)
+* `production` stage: Final app image for running StockDataView
 
-
-## CI/CD (GitHub Actions)
-
-The `.github/workflows/ci-cd.yml` file defines the CI/CD workflow, which:
-
-* Builds the Docker image on push to the `main` branch.
-* Pushes the image to Docker Hub.
+## CI/CD Workflow
+* GitHub Actions automates building the `production` image and pushing it to Docker Hub (`skytics/stockdataview:latest`) on `main` branch updates
+* The `builder` stage is used for linting and testing in CI
+* See `.github/workflows/ci-cd.yml` for details
 
 ## Contributing
 

@@ -1,4 +1,4 @@
-.PHONY: all deps check test docker-build docker-check docker-test docker-build-prod docker-run docker-tag docker-push docker-clean docker-check-ci
+.PHONY: all deps check test docker-build-dev docker-check docker-test docker-check-ci docker-build-prod docker-run docker-push docker-clean
 
 # Dependency management
 deps:
@@ -13,44 +13,41 @@ check:
 test:
 	uv run pytest -v
 
-# Dev: Build the dev image (builder stage)
-docker-build:
+# Dev: Build the builder stage image
+docker-build-dev:
 	docker build --target builder -t stockdataview:dev .
 
-# Dev: ruff check
-docker-check: docker-build
-	docker run --rm -v $(PWD):/app stockdataview:dev ruff check .
+# Dev: Run linting in container
+docker-check: docker-build-dev
+	docker run --rm -v $(PWD):/app stockdataview:dev uv run ruff check .
 
-# Dev: test
-docker-test: docker-build
-	docker run --rm stockdataview:dev pytest -v
-
-# Prod: Build the production image (production stage)
-docker-build-prod:
-	docker build --target production -t skytics/stockdataview:latest .
-
-# Prod: Run the Streamlit app (production image)
-docker-run: docker-build-prod
-	docker run --rm -e API_KEY=${API_KEY} -p 8501:8501 skytics/stockdataview:latest
-
-# Prod: Tag production image
-docker-tag: docker-build-prod
-    docker tag skytics/stockdataview skytics/stockdataview:latest
-
-# Prod: Push prod image to Docker Hub
-docker-push: docker-tag
-    docker push skytics/stockdataview:latest
-
-# Delete images
-docker-clean:
-    - docker image rm stockdataview:dev || true
-    - docker image rm skytics/stockdataview:latest || true
+# Dev: Run tests in container
+docker-test: docker-build-dev
+	docker run --rm stockdataview:dev uv run pytest -v
 
 # CI specific target: Build up to the builder stage and run checks/tests
-docker-check-ci: docker-build
+docker-check-ci: docker-build-dev
 	- docker run --rm -v $(PWD):/app stockdataview:dev uv run ruff check .
 	- docker run --rm -v $(PWD):/app stockdataview:dev uv run pytest -v
 
-# All-in-one
-all: check test docker-build
+
+# Prod: Build the production stage image
+docker-build-prod:
+	docker build --target production -t skytics/stockdataview:latest .
+
+# Prod: Run the app locally
+docker-run: docker-build-prod
+	docker run --rm -e FMP_API_KEY=${FMP_API_KEY} -p 8501:8501 skytics/stockdataview:latest
+
+# Prod: Push to Docker Hub
+docker-push: docker-build-prod
+	docker push skytics/stockdataview:latest
+
+# Clean up images
+docker-clean:
+	- docker image rm stockdataview:dev || true
+	- docker image rm skytics/stockdataview:latest || true
+
+# All-in-one for local dev
+all: check test docker-build-dev
 	@echo "All checks passed!"
