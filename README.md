@@ -1,3 +1,5 @@
+![StockDataView Project Banner](images/StockDataView.jpg)
+
 # StockDataView
 
 StockDataView is a Streamlit application designed to display and visualize stock data fetched from the Financial Modeling Prep (FMP) API. It provides users with bar charts, tables of stock fundamentals, and ratings for a given stock ticker.
