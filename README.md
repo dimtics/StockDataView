@@ -1,92 +1,96 @@
-# Stock Valuation Dashboard
+# StockDataView
+StockDataView is a Streamlit application designed to display and visualize stock data fetched from the Financial Modeling Prep (FMP) API. It provides users with bar charts, tables of stock fundamentals, and ratings for a given stock ticker.
 
-## Overview
+## Features
+* **Stock Data Visualization:** Presents stock data in clear and interactive bar charts.
+* **Fundamental Data Tables:** Displays key stock fundamentals in easy-to-read tables.
+* **Stock Ratings:** Shows ratings information for selected stocks.
+* **Containerized Application:** Easily deployable via Docker.
+* **API Key Input:** Requires users to provide their FMP API key for data retrieval.
+* **Automated CI/CD:** Uses GitHub Actions for continuous integration and deployment.
+* **Package Management:** Uses `uv` and `pyproject.toml` for dependency management.
+* **Makefile Automation:** Includes a Makefile for streamlined development and deployment workflows.
 
-This project is a web-based stock valuation dashboard that helps investors analyze dividend growth stocks. It provides insights into stock quality and valuation based on historical financial data.
+## Prerequisites
+- **Docker**: Required to build and run the application container
+- **FMP API Key**: Obtain a free or paid API key from [Financial Modeling Prep](https://financialmodelingprep.com/developer/docs/)
+- **Git**: To clone the repository (optional)
 
-Key features:
-- Fetches financial data from Financial Modeling Prep API
-- Calculates growth rates for revenue, dividends, cash flow, and other metrics
-- Determines if a stock is a quality dividend growth stock
-- Assesses whether a stock is undervalued or reasonably valued
-- Visualizes key metrics and growth rates
+## Installation
 
-## Tech Stack
+### Option 1: Use the Pre-Built Image
+1. **Pull the Image from Docker Hub**:
+   ```bash
+   docker pull skytics/stockdataview:latest
+   ```
 
-- Python 3.11+
-- FastAPI: Web framework for building APIs
-- Dash: React-based framework for building analytical web applications
-- Polars: Fast DataFrame library for data manipulation
-- Pydantic: Data validation using Python type annotations
-- PyArrow: Efficient data interchange format
-- DuckDB: Embedded analytical database
-- uv: Python packaging and dependency management tool
-- Docker: Containerization
-- GitHub Actions: CI/CD pipeline
+2. **Run the Container**:
+    * Replace `your-api-key` with your FMP API key:
+   ```bash
+   docker run -p 8501:8501 -e FMP_API_KEY=your-api-key skytics/stockdataview:latest
+   ```
 
-## Project Structure
-
-stock_valuation_app/
-├── .github/workflows/ # CI/CD configuration
-├── src/
-│ └── stock_valuation_app/
-│ ├── api/ # FastAPI routes
-│ ├── data/ # Data fetching and processing
-│ ├── models/ # Pydantic models
-│ ├── services/ # Business logic
-│ └── ui/ # Dash dashboard
-├── tests/ # Unit and integration tests
-├── Dockerfile
-├── docker-compose.yml
-├── pyproject.toml # Project metadata and dependencies
-├── README.md
-└── uv.lock # Dependency lock file
+3. Open `http://localhost:8501` in your browser
 
 
+### Option 2: Build and Run Locally
+1. **Clone the Repository**:
+   ```bash
+   git clone https://github.com/your-username/StockDataView.git
+   cd StockDataView
+   ```
 
-## Setup and Installation
+2. **Build the Production Image**:
+   ```bash
+   make docker-build-prod
+   ```
+    * This builds only the `production` stage of the multi-stage Dockerfile
 
-1. Clone the repository:
-git clone https://github.com/dimtics/stock_valuation_app.git
-cd stock_valuation_app
+3. **Run the Container**:
+    * Replace `your-api-key` with your FMP API key:
+   ```bash
+   docker run -p 8501:8501 -e FMP_API_KEY=your-api-key skytics/stockdataview:latest
+   ```
 
-2. Install uv and project dependencies:
-pip install uv
-uv pip install -e .
-
-3. Set up environment variables:
-Create a `.env` file in the project root and add your Financial Modeling Prep API key:
-FMP_API_KEY=your_api_key_here
-
-4. Run the application:
-uvicorn stock_valuation_app:app --reload
-
-5. Open your browser and navigate to `http://localhost:8000/dashboard` to view the dashboard.
-
-
-## Docker Deployment
-
-To run the application using Docker:
-
-1. Build the Docker image:
-docker build -t stock-valuation-app .
-docker run -p 8000:8000 -e FMP_API_KEY=your_api_key_here stock-valuation-app
-
-Alternatively, use Docker Compose:
-docker-compose up
-
+4. Open `http://localhost:8501` in your browser
 
 
 ## Usage
+* Once the app is running, enter a stock ticker (e.g., AAPL) in the Streamlit interface.
+* View the displayed bar charts, tables, stock fundamentals, and ratings fetched from the FMP API.
 
-1. Enter a stock symbol in the input field on the dashboard.
-2. Click the "Analyze" button to fetch and analyze the stock data.
-3. View the growth rates, quality assessment, and valuation results.
+
+## Development
+
+### Package Management (uv)
+* This project uses `uv` for package management. Dependencies are defined in `pyproject.toml`.
+* Sync dependencies from `pyproject.toml`.
+
+To install dependencies:
+
+```bash
+uv sync
+```
+
+### Makefile Commands
+* `make docker-build-prod`: Build the production image
+* `make docker-run`: Run the production image
+* `make docker-build-dev`: Build the dev image (for linting/testing)
+* `make docker-check`: Run linting in the dev image
+* `make docker-test`: Run tests in the dev image
+* `make docker-clean`: Remove all images
+
+### Multi-Stage Dockerfile
+* `builder` stage: Used for development (linting, testing)
+* `production` stage: Final app image for running StockDataView
+
+## CI/CD Workflow
+* GitHub Actions automates building the `production` image and pushing it to Docker Hub (`skytics/stockdataview:latest`) on `main` branch updates
+* The `builder` stage is used for linting and testing in CI
+* See `.github/workflows/ci-cd.yml` for details
 
 ## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! Please feel free to submit a pull request.
 
 ## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the `LICENSE` file for details.
