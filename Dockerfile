@@ -1,6 +1,6 @@
 # ------------------------------- Builder Satge -------------------------------
 
-    # Build stage (with dev tools for linting, testing, etc.)
+# Build stage (with dev tools for linting, testing, etc.)
 FROM python:3.12-slim-bookworm AS builder
 
 # The installer requires curl (and certificates) to download the release archive
@@ -28,6 +28,7 @@ RUN uv sync
 
 # Copy the rest of the project
 COPY . /app
+
 
 # ------------------------- Production Stage -------------------------
 
