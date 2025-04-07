@@ -1,7 +1,7 @@
 # ------------------------------- Builder Satge -------------------------------
 
     # Build stage (with dev tools for linting, testing, etc.)
-FROM python:3.13-slim-bookworm AS builder
+FROM python:3.12-slim-bookworm AS builder
 
 # The installer requires curl (and certificates) to download the release archive
 RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates && \
@@ -32,7 +32,7 @@ COPY . /app
 # ------------------------- Production Stage -------------------------
 
 # Final stage (production, lean image)
-FROM python:3.13-slim-bookworm AS production
+FROM python:3.12-slim-bookworm AS production
 WORKDIR /app
 
 # Prevent Python from writing pyc files and buffering output
