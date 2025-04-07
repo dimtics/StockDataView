@@ -1,4 +1,5 @@
 # StockDataView
+
 StockDataView is a Streamlit application designed to display and visualize stock data fetched from the Financial Modeling Prep (FMP) API. It provides users with bar charts, tables of stock fundamentals, and ratings for a given stock ticker.
 
 ## Features
@@ -84,10 +85,33 @@ uv sync
 * `builder` stage: Used for development (linting, testing)
 * `production` stage: Final app image for running StockDataView
 
+
 ## CI/CD Workflow
 * GitHub Actions automates building the `production` image and pushing it to Docker Hub (`skytics/stockdataview:latest`) on `main` branch updates
 * The `builder` stage is used for linting and testing in CI
 * See `.github/workflows/ci-cd.yml` for details
+
+
+## Data Source
+
+StockDataView project utilizes data from the free tier of the Financial Modeling Prep (FMP) API. Due to the limitations of the free plan, the primary focus is on **US-listed stocks**. Data for international markets and more advanced features may not be available in this version.
+
+**Limitations due to Free FMP API Plan:**
+
+* **Data Coverage:** Primarily focused on US stock market data.
+* **Historical Data:** Limited historical data availability (typically up to 5 years for most endpoints).
+* **Real-time Data:** Data may be end-of-day or delayed real-time.
+* **API Call Limits:** Functionality might be limited by the daily API call restrictions of the free plan.
+
+**Potential Future Enhancements:**
+
+With access to a paid FMP API plan, future versions of this dashboard could include:
+
+* Support for international stock markets.
+* Access to more extensive historical data.
+* Real-time data updates.
+* Integration of additional financial data and features.
+
 
 ## Contributing
 Contributions are welcome! Please feel free to submit a pull request.
