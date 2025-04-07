@@ -1,9 +1,7 @@
 # StockDataView
-
 StockDataView is a Streamlit application designed to display and visualize stock data fetched from the Financial Modeling Prep (FMP) API. It provides users with bar charts, tables of stock fundamentals, and ratings for a given stock ticker.
 
 ## Features
-
 * **Stock Data Visualization:** Presents stock data in clear and interactive bar charts.
 * **Fundamental Data Tables:** Displays key stock fundamentals in easy-to-read tables.
 * **Stock Ratings:** Shows ratings information for selected stocks.
@@ -14,7 +12,6 @@ StockDataView is a Streamlit application designed to display and visualize stock
 * **Makefile Automation:** Includes a Makefile for streamlined development and deployment workflows.
 
 ## Prerequisites
-
 - **Docker**: Required to build and run the application container
 - **FMP API Key**: Obtain a free or paid API key from [Financial Modeling Prep](https://financialmodelingprep.com/developer/docs/)
 - **Git**: To clone the repository (optional)
@@ -22,7 +19,6 @@ StockDataView is a Streamlit application designed to display and visualize stock
 ## Installation
 
 ### Option 1: Use the Pre-Built Image
-
 1. **Pull the Image from Docker Hub**:
    ```bash
    docker pull skytics/stockdataview:latest
@@ -38,7 +34,6 @@ StockDataView is a Streamlit application designed to display and visualize stock
 
 
 ### Option 2: Build and Run Locally
-
 1. **Clone the Repository**:
    ```bash
    git clone https://github.com/your-username/StockDataView.git
@@ -68,7 +63,6 @@ StockDataView is a Streamlit application designed to display and visualize stock
 ## Development
 
 ### Package Management (uv)
-
 * This project uses `uv` for package management. Dependencies are defined in `pyproject.toml`.
 * Sync dependencies from `pyproject.toml`.
 
@@ -96,9 +90,7 @@ uv sync
 * See `.github/workflows/ci-cd.yml` for details
 
 ## Contributing
-
 Contributions are welcome! Please feel free to submit a pull request.
 
 ## License
-
 This project is licensed under the MIT License - see the `LICENSE` file for details.

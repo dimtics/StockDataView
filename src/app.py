@@ -94,6 +94,8 @@ def display_quotes(quote_data: dict[str, Any], profile_data: dict[str, Any]) -> 
 
 
 def display_metric_tables(data: list[dict[str, Any]]):
+    """Displays metric tables in main area"""
+
     def generate_table_rows(data: dict[str, Any]):  # table_name: str
         rows_html = ""
         for metric, value in data.items():
@@ -219,6 +221,8 @@ def display_metric_tables(data: list[dict[str, Any]]):
 def display_metrics_charts(
     metrics_data: list[dict[str, Any]], key_metrics_ttm_data: dict[str, Any]
 ):
+    """Displays metrics charts in main area"""
+
     def create_compact_bar_chart(data: pl.DataFrame, x_col, y_col, title, ttm_value):
         fig = go.Figure()
 
@@ -230,7 +234,7 @@ def display_metrics_charts(
                 name="Historical",
                 marker=dict(
                     color="#4C78A8",  # Modern blue
-                    line=dict(width=1.5, color="#2E2E2E"),  # Dark outline
+                    line=dict(width=1, color="#2E2E2E"),  # Dark outline
                 ),
                 width=0.75,
                 opacity=0.9,
@@ -246,7 +250,7 @@ def display_metrics_charts(
                 y=[ttm_value],
                 mode="markers+text",
                 marker=dict(
-                    size=14,
+                    size=12,
                     color="#F28C38",  # Vibrant orange
                     symbol="diamond",
                     line=dict(width=2, color="#D76F1E"),  # Darker orange outline
@@ -255,7 +259,7 @@ def display_metrics_charts(
                 text=[f"{ttm_value:.2f}"],
                 textposition="top center",
                 textfont=dict(
-                    size=13, color="#2E2E2E", weight="bold"
+                    size=12, color="#2E2E2E", weight="bold"
                 ),  # Dark gray for visibility
                 hovertemplate="TTM: %{y:.2f}",
             )
@@ -270,7 +274,7 @@ def display_metrics_charts(
             y1=ttm_value,
             line=dict(
                 color="#F28C38",
-                width=2,
+                width=1.5,
                 dash="dash",
             ),
         )
@@ -317,7 +321,7 @@ def display_metrics_charts(
             ticktext=data[x_col].dt.strftime("%Y"),
             gridcolor="rgba(0,0,0,0.2)",  # Darker gridlines for white background
             linecolor="#666666",
-            linewidth=1.5,
+            linewidth=1,
             ticks="outside",
             tickfont=dict(size=12),
             title_font=dict(size=14),
@@ -327,7 +331,7 @@ def display_metrics_charts(
         fig.update_yaxes(
             gridcolor="rgba(0,0,0,0.2)",  # Darker gridlines
             linecolor="#666666",
-            linewidth=1.5,
+            linewidth=1,
             tickfont=dict(size=12),
             title_font=dict(size=14),
             zeroline=False,
@@ -345,7 +349,7 @@ def display_metrics_charts(
         )
         return fig
 
-    # Create charts
+    # Create dataframe to use for charts
     df = (
         pl.DataFrame(metrics_data)
         .with_columns(
@@ -362,6 +366,7 @@ def display_metrics_charts(
         return None
 
     def plot_chart(metrics: list[tuple[str, str]]):
+        """Plots charts for each metric in the list"""
         for metric, title in metrics:
             ttm_value = key_metrics_ttm_data[f"{metric}_ttm"]
             dfx = df.select("FYDateEnding", f"{metric}")
@@ -414,6 +419,8 @@ def display_metrics_charts(
 
 
 def display_growth_charts(growth_data: list[dict[str, Any]]):
+    """Displays growth charts in main area"""
+
     def create_compact_bar_chart(data: pl.DataFrame, x_col, y_col, title):
         fig = go.Figure()
 
@@ -424,7 +431,7 @@ def display_growth_charts(growth_data: list[dict[str, Any]]):
                 name="",
                 marker=dict(
                     color="#54A24B",  # Modern green
-                    line=dict(width=1.5, color="#2E2E2E"),  # Dark outline
+                    line=dict(width=1, color="#2E2E2E"),  # Dark outline
                 ),
                 width=0.7,
                 hovertemplate="%{x}: %{y:.2f}%",
@@ -526,7 +533,7 @@ def display_growth_charts(growth_data: list[dict[str, Any]]):
 
     col1, col2 = st.columns(2)
     col3, col4 = st.columns(2)
-    col5, col6 = st.columns(2)
+    col5, _ = st.columns(2)
 
     with col1:
         col1_metrics = [
@@ -553,19 +560,18 @@ def display_growth_charts(growth_data: list[dict[str, Any]]):
             ("debt_growth", "Debt Growth"),
         ]
         plot_chart(col5_metrics)
-    # with col6:
-    #     col6_metrics = [("fcf_yield", "FCF Yield"),]
-    #     plot_chart(col6_metrics)
 
 
 def main():
-    # Main UI
+    """Main function to run StockDataView app"""
+
+    # Set main page config
     st.set_page_config(
-        page_title="Stock Valuation Dashboard",
+        page_title="Stock Data View",
         layout="wide",
     )
 
-    # Custom CSS
+    # Custom CSS for styling main page
     st.markdown(
         """
     <style>
@@ -580,6 +586,7 @@ def main():
         unsafe_allow_html=True,
     )
 
+    # Custom CSS for styling sidebar
     st.sidebar.markdown(
         """
             <style>
@@ -588,52 +595,54 @@ def main():
                 border-radius: 8px;
             }
             </style>
-            """,
+        """,
         unsafe_allow_html=True,
     )
 
+    # Set main page title and description
     st.title("StockDataView")
-    # st.divider()
     st.subheader(
         "Visualize stock fundamentals, ratings, and historical data using the Financial Modeling Prep (FMP) API",
         divider="gray",
     )
-
     st.markdown('<div style="height: 10px;"></div>', unsafe_allow_html=True)
 
-    # Sidebar
+    # Sidebar for user input
     ticker = st.sidebar.text_input(r"$\textsf{\Large Enter stock symbol:}$")
     analyze_button = st.sidebar.button("Analyze")
 
     if ticker and analyze_button:
-        # Get data
+        # Get stock ticker data
         stock_data = get_validated_stock_data(ticker)
-        profile_data = stock_data["profile"][0]
-        quote_data = stock_data["quote"][0]
-        ratings_data = stock_data["ratings"]
-        key_metrics_ttm_data = stock_data["key_metrics_ttm"][0]
-        key_metrics_data = stock_data["key_metrics"]
-        growth_data = stock_data["growth"]
+        if stock_data is None:
+            st.write(f"No data found for stock ticker: {ticker}")
+        else:
+            profile_data = stock_data["profile"][0]
+            quote_data = stock_data["quote"][0]
+            ratings_data = stock_data["ratings"]
+            key_metrics_ttm_data = stock_data["key_metrics_ttm"][0]
+            key_metrics_data = stock_data["key_metrics"]
+            growth_data = stock_data["growth"]
 
-        table_data = [
-            quote_data,
-            key_metrics_ttm_data,
-            growth_data,
-            ratings_data,
-        ]
+            table_data = [
+                quote_data,
+                key_metrics_ttm_data,
+                growth_data,
+                ratings_data,
+            ]
 
-        if stock_data:
             # Display ticker profile
             display_profile(profile_data)
 
             # Display ticker quotes
-            # st.markdown("#### Key Metrics")
             display_quotes(quote_data, profile_data)
             st.markdown('<div style="height: 10px;"></div>', unsafe_allow_html=True)
             st.markdown('<hr class="custom-divider">', unsafe_allow_html=True)
 
+            # Display metric tables
             display_metric_tables(table_data)
 
+            # Define layout for metrics and growth charts
             st.markdown('<hr class="custom-divider">', unsafe_allow_html=True)
             st.markdown('<div style="height: 10px;"></div>', unsafe_allow_html=True)
 
@@ -643,12 +652,14 @@ def main():
                     """<h4 style="text-align: center;">Valuation Metrics</h4>""",
                     unsafe_allow_html=True,
                 )
+                # Display valuation charts
                 display_metrics_charts(key_metrics_data, key_metrics_ttm_data)
             with right:
                 st.markdown(
                     """<h4 style="text-align: center;">Growth Metrics</h4>""",
                     unsafe_allow_html=True,
                 )
+                # Display growth charts
                 display_growth_charts(growth_data)
 
             st.divider()

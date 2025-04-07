@@ -1,9 +1,11 @@
-import sys
-import logging
-from typing import Any
 import asyncio
+import logging
+import sys
 from dataclasses import dataclass, field
+from typing import Any, Optional
+
 import httpx
+
 from config import settings
 
 # Define stock data type
@@ -39,13 +41,19 @@ class FMPClient:
         ]
     )  #
 
-    async def get_data(self, client: httpx.Client, url: str) -> dict[str, Any]:
+    async def get_data(
+        self, client: httpx.Client, url: str
+    ) -> Optional[dict[str, Any]]:
         """Call API endpoint asynchronously"""
-        response = await client.get(url)
-        data = response.json()
-        return data
+        try:
+            response = await client.get(url)
+            data = response.json()
+            return data
+        except Exception as e:
+            stock_logger().error(f"Error fetching data from {url}: {e}")
+            return None
 
-    async def fetch_data(self, ticker: str) -> dict[str, list[dict[str, Any]]]:
+    async def fetch_data(self, ticker: str) -> Optional[StockData]:
         """Extracts data asynchronously from multiple FMP endpoints"""
         urls = []
         for metric in self.metric_types:
@@ -60,4 +68,14 @@ class FMPClient:
             for url in urls:
                 tasks.append(asyncio.create_task(self.get_data(client, url)))
             results = await asyncio.gather(*tasks)
-        return results
+
+        # Check if results are empty or contain error messages
+        if isinstance(results[0], list) and len(results[0]) == 0:
+            return None
+        elif (
+            isinstance(results[0], dict)
+            and list(results[0].keys())[0] == "Error Message"
+        ):
+            return None
+        else:
+            return results
